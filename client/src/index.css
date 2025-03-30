@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thumb-gray-700::-webkit-scrollbar-thumb {
+    background-color: rgba(55, 65, 81, 0.5);
+    border-radius: 20px;
+  }
+
+  .scrollbar-track-gray-900::-webkit-scrollbar-track {
+    background-color: rgba(17, 24, 39, 0.1);
+  }
+}
+
+body {
+  @apply bg-slate-900 text-gray-100 font-sans antialiased overflow-hidden;
+}
+
+/* Add a subtle text shadow to improve readability */
+h1,
+h2,
+h3 {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
