@@ -1,42 +1,18 @@
+/* Modern chat app styling */
 #root {
-  max-width: 1280px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  height: 100%;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Custom animations for chat elements */
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 0.5rem rgba(139, 92, 246, 0.1)); }
+  50% { filter: drop-shadow(0 0 1rem rgba(139, 92, 246, 0.3)); }
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.pulse-animation {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
+/* Custom scrollbar is already in index.css */

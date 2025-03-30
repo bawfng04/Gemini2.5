@@ -1,137 +1,164 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import TypingIndicator from "./TypingIndicator";
+import { IoAddCircle } from "react-icons/io5";
 
-const API_URL = "http://localhost:5000/api"; // Your backend URL
+const API_URL = "http://localhost:5000/api";
 
 function ChatInterface() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [conversationId, setConversationId] = useState(null); // Store current conversation ID
+  const [conversationId, setConversationId] = useState(null);
 
-  // Optional: Load initial messages if a conversation ID exists (e.g., from local storage or URL param)
+  // If there's a conversationId, load messages for that conversation
   useEffect(() => {
-    const loadHistory = async (convId) => {
-      setIsLoading(true);
-      try {
-        const response = await axios.get(`${API_URL}/chat/${convId}`);
-        setMessages(
-          response.data.map((msg) => ({
-            id: msg.MessageID, // Use a unique ID from DB
-            sender: msg.Sender,
-            text: msg.Content,
-            timestamp: msg.Timestamp,
-          }))
-        );
-        setConversationId(convId);
-      } catch (err) {
-        console.error("Error loading chat history:", err);
-        setError("Failed to load chat history.");
-        setConversationId(null); // Reset on error
-        setMessages([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (conversationId) {
+      const fetchMessages = async () => {
+        try {
+          setIsLoading(true);
+          const response = await axios.get(`${API_URL}/chat/${conversationId}`);
 
-    const initialConvId = localStorage.getItem("conversationId"); // Example: load from storage
-    if (initialConvId) {
-      loadHistory(initialConvId);
-    }
-  }, []);
-
-  const handleSendMessage = useCallback(
-    async (inputText) => {
-      if (!inputText.trim()) return;
-
-      const userMessage = {
-        id: Date.now(), // Temporary ID for UI rendering
-        sender: "USER",
-        text: inputText,
-        timestamp: new Date().toISOString(),
+          if (response.data && Array.isArray(response.data)) {
+            const formattedMessages = response.data.map((msg, index) => ({
+              id: msg.MessageID || index,
+              text: msg.Content,
+              sender: msg.Sender,
+              timestamp: msg.Timestamp,
+            }));
+            setMessages(formattedMessages);
+          }
+        } catch (err) {
+          console.error("Error fetching messages:", err);
+          setError("Failed to load conversation history.");
+        } finally {
+          setIsLoading(false);
+        }
       };
 
-      // Optimistically update UI
-      setMessages((prev) => [...prev, userMessage]);
-      setIsLoading(true);
-      setError(null);
+      fetchMessages();
+    }
+  }, [conversationId]);
 
+  // Remove the scrollToBottomWithDelay function and related useEffect
+
+  const handleSendMessage = useCallback(
+    async (message) => {
       try {
-        const response = await axios.post(`${API_URL}/chat`, {
-          message: inputText,
-          conversationId: conversationId, // Send current ID, backend handles new one if null
-        });
-
-        const geminiMessage = {
-          id: Date.now() + 1, // Temporary ID
-          sender: "GEMINI",
-          text: response.data.response,
+        // Add user message to UI immediately
+        const userMessage = {
+          id: Date.now(),
+          text: message,
+          sender: "USER",
           timestamp: new Date().toISOString(),
         };
 
-        // Update state with Gemini response and the potentially new/confirmed conversation ID
-        setMessages((prev) => [...prev, geminiMessage]);
-        if (
-          response.data.conversationId &&
-          response.data.conversationId !== conversationId
-        ) {
-          setConversationId(response.data.conversationId);
-          // Optional: Save conversationId to localStorage
-          // localStorage.setItem('conversationId', response.data.conversationId);
+        setMessages((prev) => [...prev, userMessage]);
+        setIsLoading(true);
+        setError(null);
+
+        // Send message to API
+        const response = await axios.post(`${API_URL}/chat`, {
+          message,
+          conversationId,
+        });
+
+        // Add AI response to messages
+        if (response.data) {
+          const aiMessage = {
+            id: Date.now() + 1,
+            text: response.data.response,
+            sender: "GEMINI",
+            timestamp: new Date().toISOString(),
+          };
+
+          setMessages((prev) => [...prev, aiMessage]);
+
+          // Update conversation ID if this was a new conversation
+          if (response.data.conversationId && !conversationId) {
+            setConversationId(response.data.conversationId);
+          }
         }
       } catch (err) {
         console.error("Error sending message:", err);
-        const errorText =
-          err.response?.data?.error || "Failed to get response from Gemini.";
-        setError(errorText);
-        // Optional: Remove optimistic user message on error, or add error message
-        setMessages((prev) => [
-          ...prev,
-          { id: Date.now() + 2, sender: "ERROR", text: `Error: ${errorText}` },
-        ]);
+        setError(
+          err.response?.data?.error ||
+            "Failed to send message. Please try again."
+        );
       } finally {
         setIsLoading(false);
       }
     },
     [conversationId]
-  ); // Re-create function if conversationId changes
+  );
 
-  // Clear chat and start new conversation
   const startNewChat = () => {
     setMessages([]);
     setConversationId(null);
     setError(null);
-    // Optional: Remove from localStorage
-    // localStorage.removeItem('conversationId');
   };
 
   return (
-    <div className="w-full max-w-4xl h-[80vh] flex flex-col bg-black/30 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden border border-white/10 transition-all duration-300">
-      <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/20">
+    <motion.div
+      className="w-full max-w-4xl h-[85vh] flex flex-col rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-all duration-300"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+      style={{
+        background:
+          "linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.5))",
+        backdropFilter: "blur(16px)",
+      }}
+    >
+      <motion.div
+        className="p-4 border-b border-white/10 flex justify-between items-center"
+        style={{
+          background:
+            "linear-gradient(to right, rgba(0,0,0,0.5), rgba(30,30,60,0.5))",
+        }}
+      >
         <h2 className="text-xl font-medium text-white/90 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Active Conversation
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+            {conversationId ? `Conversation #${conversationId}` : "New Chat"}
+          </span>
         </h2>
-        <button
+        <motion.button
           onClick={startNewChat}
-          className="px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 to-violet-600 hover:from-pink-600 hover:to-violet-700 text-white text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-pink-500/25 active:scale-95"
+          className="px-4 py-2 rounded-full flex items-center gap-2 text-white text-sm font-medium transition-all duration-300 active:scale-95"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          style={{
+            background:
+              "linear-gradient(to right, rgb(219, 39, 119), rgb(124, 58, 237))",
+            boxShadow: "0 4px 15px rgba(219, 39, 119, 0.25)",
+          }}
         >
+          <IoAddCircle size={18} />
           New Chat
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
+
       <MessageList messages={messages} />
+
       <AnimatePresence>{isLoading && <TypingIndicator />}</AnimatePresence>
+
       {error && (
-        <div className="p-3 mx-4 my-2 text-red-200 text-center text-sm bg-red-500/20 border border-red-500/30 rounded-lg">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="p-3 mx-4 my-2 text-red-200 text-center text-sm bg-red-500/20 border border-red-500/30 rounded-lg"
+        >
           {error}
-        </div>
+        </motion.div>
       )}
+
       <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
-    </div>
+    </motion.div>
   );
 }
 

@@ -19,7 +19,7 @@
 }
 
 body {
-  @apply bg-slate-900 text-gray-100 font-sans antialiased overflow-hidden;
+  @apply bg-slate-950 text-gray-100 font-sans antialiased overflow-hidden;
 }
 
 /* Add a subtle text shadow to improve readability */
