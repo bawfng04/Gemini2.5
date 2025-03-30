@@ -82,6 +82,4 @@ npm run dev
 
 5. Open `http://localhost:5173` in your browser
 
-## License
 
-MIT
