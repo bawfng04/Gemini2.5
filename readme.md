@@ -1,6 +1,6 @@
 # Gemini Chat App
 
-A modern chat application powered by Google's Gemini AI, built with React and Node.js, powered by Gemini and Claude.
+A modern chat application to interact with Google's Gemini 2.5 pro model, built with React and Node.js, powered by Gemini and Claude.
 
 ![Gemini Chat App Screenshot](screenshot/image2.png)
 
